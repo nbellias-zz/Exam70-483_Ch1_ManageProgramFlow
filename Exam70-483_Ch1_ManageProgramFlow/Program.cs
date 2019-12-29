@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -98,10 +99,48 @@ namespace Exam70_483_Ch1_ManageProgramFlow
 
         static bool tickRunning; // flag variable
 
+        [ThreadStatic]
+        static int threadStaticId; // flag variable specific to each calling thread
+
         public static ThreadLocal<Random> RandomGenerator = new ThreadLocal<Random>(() =>        {
             return new Random(2);        });
 
-        static void /* async Task */ Main(string[] args)
+        static void DisplayThread(Thread t)
+        {
+            Console.WriteLine("Name: {0}", t.Name);
+            Console.WriteLine("Culture: {0}", t.CurrentCulture);
+            Console.WriteLine("Priority: {0}", t.Priority);
+            Console.WriteLine("Context: {0}", t.ExecutionContext);
+            Console.WriteLine("IsBackground?: {0}", t.IsBackground);
+            Console.WriteLine("IsPool?: {0}", t.IsThreadPoolThread);
+        }
+
+        static double computeAverages(long noOfValues)
+        {
+            double total = 0;
+            Random rand = new Random();
+            for (long values = 0; values < noOfValues; values++)
+            {
+                total = total + rand.NextDouble();
+            }
+            return total / noOfValues;
+        }
+
+        static Task<double> asyncComputeAverages(long noOfValues)
+        {
+            return Task<double>.Run(() =>
+            {
+                return computeAverages(noOfValues);
+            });
+        }
+
+        static async Task<string> FetchWebPage(string url)
+        {
+            HttpClient httpClient = new HttpClient();
+            return await httpClient.GetStringAsync(url);
+        }
+
+        static async Task /* async Task */ Main(string[] args)
         {
             //Console.WriteLine("Started Invoke...");
             //Parallel.Invoke(()=>Task1(),
@@ -261,9 +300,10 @@ namespace Exam70_483_Ch1_ManageProgramFlow
             //tickRunning = true;
             //Thread tickThread = new Thread(() =>
             //{
+            //    threadStaticId++; // Called as ThreadStatic
             //    while (tickRunning)
             //    {
-            //        Console.WriteLine("Tick");
+            //        Console.WriteLine("Tick " + threadStaticId);
             //        Thread.Sleep(1000);
             //    }
             //});
@@ -282,26 +322,55 @@ namespace Exam70_483_Ch1_ManageProgramFlow
             //Console.WriteLine("Joining thread");
             //threadToWaitFor.Join();
 
-            Thread t1 = new Thread(() =>
-            {
-                for (int i = 0; i < 5; i++)
-                {
-                    Console.WriteLine("t1: {0}", RandomGenerator.Value.Next(10));
-                    Thread.Sleep(500);
-                }
-            });
+            //Thread t1 = new Thread(() =>
+            //{
+            //    for (int i = 0; i < 5; i++)
+            //    {
+            //        Console.WriteLine("t1: {0}", RandomGenerator.Value.Next(10));
+            //        Thread.Sleep(500);
+            //    }
+            //});
 
-            Thread t2 = new Thread(() =>
-            {
-                for (int i = 0; i < 5; i++)
-                {
-                    Console.WriteLine("t2: {0}", RandomGenerator.Value.Next(10));
-                    Thread.Sleep(500);
-                }
-            });
+            //Thread t2 = new Thread(() =>
+            //{
+            //    for (int i = 0; i < 5; i++)
+            //    {
+            //        Console.WriteLine("t2: {0}", RandomGenerator.Value.Next(10));
+            //        Thread.Sleep(500);
+            //    }
+            //});
 
-            t1.Start();
-            t2.Start();
+            //t1.Start();
+            //t2.Start();
+
+            //Thread.CurrentThread.Name = "Main method";
+            //DisplayThread(Thread.CurrentThread);
+
+            //for (int i = 0; i < 50; i++)
+            //{
+            //    int stateNumber = i;
+            //    ThreadPool.QueueUserWorkItem(state => DoWork(stateNumber));
+            //}
+
+            //long noOfValues = 3456543654l;
+            // Console.WriteLine("Result: " + computeAverages(noOfValues));
+            //Task.Run(() =>
+            //    {
+            //        Console.WriteLine("Result: " + computeAverages(noOfValues));
+            //    });
+
+            // var result = await asyncComputeAverages(noOfValues); // Main must become async Task
+            // Console.WriteLine("Result: " + result.ToString());
+
+            try
+            {
+                string wp = await FetchWebPage("http://www.in.gr");
+                Console.WriteLine(wp);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
 
             //
             Console.WriteLine("Program Termination");
