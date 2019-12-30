@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Threading;
@@ -138,6 +140,16 @@ namespace Exam70_483_Ch1_ManageProgramFlow
         {
             HttpClient httpClient = new HttpClient();
             return await httpClient.GetStringAsync(url);
+        }
+
+        static async Task<IEnumerable<string>> FetchWebPages(string[] urls)
+        {
+            var tasks = new List<Task<String>>();
+            foreach (string url in urls)
+            {
+                tasks.Add(FetchWebPage(url));
+            }
+            return await Task.WhenAll(tasks);
         }
 
         static async Task /* async Task */ Main(string[] args)
@@ -362,12 +374,22 @@ namespace Exam70_483_Ch1_ManageProgramFlow
             // var result = await asyncComputeAverages(noOfValues); // Main must become async Task
             // Console.WriteLine("Result: " + result.ToString());
 
+            //try
+            //{
+            //    string wp = await FetchWebPage("http://www.in.gr");
+            //    Console.WriteLine(wp);
+            //}
+            //catch (Exception ex)
+            //{
+            //    Console.WriteLine(ex.Message);
+            //}
+
             try
             {
-                string wp = await FetchWebPage("http://www.in.gr");
-                Console.WriteLine(wp);
-            }
-            catch (Exception ex)
+                IEnumerable<string> wps = await FetchWebPages(new string[]{"http://www.in.gr", "http://www.hp.com"});
+                foreach(string url in wps)
+                    Console.WriteLine(url);
+            } catch(Exception ex)
             {
                 Console.WriteLine(ex.Message);
             }
